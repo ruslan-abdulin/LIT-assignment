@@ -1,0 +1,28 @@
+import pandas as pd
+csv_path = '3MO.csv'
+xls_path = 'RWTCd.xls'
+df = pd.read_csv (csv_path)
+df2 = pd.read_excel (xls_path, "Data 1", skiprows=2)
+df['DATE'] = pd.to_datetime(df['DATE'])
+df2['Date'] = pd.to_datetime(df2['Date'])
+df = df[df.DTB3 != '.']
+df['DTB3'] = pd.to_numeric(df['DTB3'])
+start_date = '2020-01-01'
+end_date = '2020-12-31'
+end_date2 = '2021-05-13'
+mask = (df['DATE'] > start_date) & (df['DATE'] <= end_date)
+mask2 = (df2['Date'] > start_date) & (df2['Date'] <= end_date2)
+df = df.loc[mask]
+df2 = df2.loc[mask2]
+df2 = df2.rename(columns={'Cushing, OK WTI Spot Price FOB (Dollars per Barrel)':'Price'})
+for i in range (8569, 8820):
+    df2.loc[i, 'return_rate_3mo'] = (100 / df2.loc[i, 'Price'] * df2.loc[i+91, 'Price']) - 100
+mask2 = (df2['Date'] > start_date) & (df2['Date'] <= end_date)
+df2 = df2.loc[mask2]
+df2['return_rate_3mo'] = pd.to_numeric(df2['return_rate_3mo'])
+df = df.rename(columns={'DATE':'Date'})
+df2 = df2.merge(df, on=['Date'], suffixes=['return_rate_3mo','DTB3']).eval('excess_return = return_rate_3mo - DTB3')
+
+#import numpy as np
+#for j in range (0, 247):
+    df2.loc[j, 'log_return'] = np.log(df2.loc[j+1, 'excess_return'] / df2.loc[j, 'excess_return'])
